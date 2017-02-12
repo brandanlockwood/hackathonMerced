@@ -1,14 +1,10 @@
 import os
-from flask import Flask,url_for,request,render_template,request
 import flask
-import requests
-import json
 from clarifai.rest import ClarifaiApp
 from clarifai.rest import Image as ClImage
 from colorthief import ColorThief
 
-
-app = Flask(__name__)
+app = flask.Flask(__name__)
 appClar = ClarifaiApp()
 
 #returns (r,g,b)
@@ -37,16 +33,14 @@ def possibleStyles(appCont,name):
     response=model.predict([image])
     return response["outputs"][0]["data"]["concepts"]
 
-@app.route('/')
-def stuff():
-    img='/home/ubuntu/workspace/hackathon/images/image.jpg'
-    apparel=possibleApparel(appClar,img)
-    styles=possibleStyles(appClar,img)
-    color=getImgColor(img)
-    print color
-    print json.dumps(apparel,indent=2)
-    return json.dumps(styles,indent=2)
-    
-    
-app.run(debug=True,host=os.getenv('IP', '0.0.0.0'),port=int(os.getenv('PORT', 8080)))
 
+@app.route('/')
+def hello():
+    
+    return flask.render_template('index.html')
+
+app.run(
+    host=os.getenv('IP', '0.0.0.0'),
+    port=int(os.getenv('PORT', 8080)),
+    debug=True
+)
