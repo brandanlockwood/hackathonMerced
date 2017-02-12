@@ -5,6 +5,10 @@
         <div id="content"></div>
         <div>
       <img src="/getImage/another.jpg"></img>
+      
+     {% for cloth in clothes %}
+      <p> {{ cloth.style }} </p>
+     {% endfor %}
       <form action = "https://hack-blockwood.c9users.io/uploader" method = "POST" 
          enctype = "multipart/form-data">
          <input type = "file" name = "file" />

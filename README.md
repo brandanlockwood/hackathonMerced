@@ -42,3 +42,6 @@ Click on the green button on `app.py`, or open up a new terminal and type:
 ColorThief
 Clarifai
 Flask
+webcolor
+flask_sqlalchemy
+flask_ask

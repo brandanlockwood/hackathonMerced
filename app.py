@@ -6,6 +6,7 @@ from colorthief import ColorThief
 import logging
 import webcolors
 import time
+import json
 from flask import request
 from flask_ask import Ask, statement
 from flask_sqlalchemy import SQLAlchemy
@@ -92,8 +93,9 @@ def image(identification):
 ################Get images
 @app.route('/images/<color>')
 def getImages(color):
-    clothes=db.query.filter_by(color=color).all()
-    return flask.render_template('index.html',clothes=clothes)
+    someClothes=db.session.query(clothes).filter_by(color=color).all()
+    print someClothes
+    return flask.render_template('index.html',clothes=someClothes)
 
 ###################################Was hoping for echo
 @ask.intent('HelloIntent')
@@ -118,8 +120,10 @@ def upload_file():
           color=webcolors.rgb_to_name(color)
       except ValueError:
           color=closest_colour(color)
+      print color+" IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIEJFFFFFFFFFf"
       style=possibleStyles(appClar,'images/'+filename)
-      style=style[0]["name"]
+      print json.dumps(style,indent=2)
+      style=style[1]["name"]
       moreClothes = clothes(apparel, style,color, filename)
       db.session.add(moreClothes)
       db.session.commit()
