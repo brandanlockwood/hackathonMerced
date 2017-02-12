@@ -5,6 +5,7 @@ from clarifai.rest import Image as ClImage
 from colorthief import ColorThief
 import logging
 import webcolors
+import time
 from flask import request
 from flask_ask import Ask, statement
 from flask_sqlalchemy import SQLAlchemy
@@ -22,9 +23,18 @@ db = SQLAlchemy(app)
 appClar = ClarifaiApp()
 socketio = flask_socketio.SocketIO(app)
 ids=0
+def closest_colour(requested_colour):
+    min_colours = {}
+    for key, name in webcolors.css3_hex_to_names.items():
+        r_c, g_c, b_c = webcolors.hex_to_rgb(key)
+        rd = (r_c - requested_colour[0]) ** 2
+        gd = (g_c - requested_colour[1]) ** 2
+        bd = (b_c - requested_colour[2]) ** 2
+        min_colours[(rd + gd + bd)] = name
+    return min_colours[min(min_colours.keys())]
 #returns (r,g,b)
 def getImgColor(name):
-    color_thief = ColorThief(name)
+    color_thief = ColorThief('images/'+name)
     dominant_color = color_thief.get_color(quality=1)
     return dominant_color
 
@@ -55,12 +65,14 @@ class clothes(db.Model):
    style = db.Column(db.String(40))
    color = db.Column(db.String(40)) 
    image = db.Column(db.String(100))
+   
+   def __init__(self, name, style, color,imagePath):
+       self.name = name
+       self.style = style
+       self.color = color
+       self.imagePath = imagePath
 
-def __init__(self, name, style, color,imagePath):
-   self.name = name
-   self.style = style
-   self.color = color
-   self.imagePath = imagePath
+
 #######################################################
 ask = Ask(app, "/")
 
@@ -73,10 +85,15 @@ def on_connect():
 def something():
     return flask.render_template('index.html')
 
-################Get images
-@app.route('/images/<identification>')
-def getImages(identification):
+@app.route('/getImage/<identification>')
+def image(identification):
     return flask.send_from_directory('images', identification)
+    
+################Get images
+@app.route('/images/<color>')
+def getImages(color):
+    clothes=db.query.filter_by(color=color).all()
+    return flask.render_template('index.html',clothes=clothes)
 
 ###################################Was hoping for echo
 @ask.intent('HelloIntent')
@@ -92,16 +109,21 @@ def upload_file():
       ids=ids+1
       filename = str(ids)+secure_filename(f.filename)
       f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+      while not os.path.exists('images/'+filename):
+        time.sleep(1)
       apparel=possibleApparel(appClar,'images/'+filename)
       apparel=apparel[0]["name"]
       color=getImgColor(filename)
-      color=webcolors.rgb_to_name(color)
+      try:
+          color=webcolors.rgb_to_name(color)
+      except ValueError:
+          color=closest_colour(color)
       style=possibleStyles(appClar,'images/'+filename)
-      clothes = clothes(apparel, style,
-           color, filename)
-      db.add(clothes)
-      db.commit()
-      return flask.render_template('index.html')
+      style=style[0]["name"]
+      moreClothes = clothes(apparel, style,color, filename)
+      db.session.add(moreClothes)
+      db.session.commit()
+      return flask.render_template("index.html")
       
 
 db.create_all()   
